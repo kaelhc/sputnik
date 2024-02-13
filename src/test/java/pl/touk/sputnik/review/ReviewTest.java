@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,4 +66,34 @@ class ReviewTest {
         return comment;
     }
 
+    @Test
+    void shouldAddProblem() {
+        String source = "TestSource";
+        String problem = "TestProblem";
+        review.addProblem(source, problem);
+
+        assertThat(review.getProblems().contains(review.getFormatter().formatProblem(source, problem)))
+                .isTrue();
+    }
+
+    @Test
+    void shouldAddViolation() {
+        Violation violation = new Violation("file1", 1, "Violation message",
+                Severity.ERROR);
+        ReviewResult reviewResult = new ReviewResult();
+        reviewResult.getViolations().add(violation);
+
+        when(file1.getReviewFilename()).thenReturn("file1");
+        when(file1.getComments()).thenReturn(new ArrayList<>());
+        when(reviewFormatter.formatComment("source", Severity.ERROR, "Violation message"))
+                .thenReturn("Format comment");
+
+        assertThat(file1.getComments()).hasSize(0);
+        review.add("source", reviewResult);
+
+        assertThat(file1.getComments()).hasSize(1);
+        assertThat(file1.getComments().get(0).getLine()).isEqualTo(1);
+        assertThat(file1.getComments().get(0).getMessage()).isEqualTo("Format comment");
+        assertThat(file1.getComments().get(0).getSeverity()).isEqualTo(Severity.ERROR);
+    }
 }
